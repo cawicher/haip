@@ -4,7 +4,9 @@ import { isPaymentGatewayMockMode } from '../../modules/payment/payment-gateway.
  * Refuse to boot an insecure configuration in production. The #1 real-world
  * breach risk is shipping with AUTH_ENABLED=false (or payment gateways in mock
  * mode) to a production host. The intentional public demo opts out with
- * HAIP_ALLOW_INSECURE=true.
+ * HAIP_ALLOW_INSECURE=true. A deployment whose payments are taken outside HAIP
+ * (HAIP only records them) opts out of the payment check alone with
+ * HAIP_ALLOW_MOCK_PAYMENTS=true — auth and the ID key stay enforced.
  *
  * Pure function over an env map so it's unit-testable; main.ts calls it with
  * process.env at startup.
@@ -19,7 +21,7 @@ export function assertSecureConfig(env: NodeJS.ProcessEnv = process.env): void {
   if (env['HAIP_ALLOW_INSECURE'] === 'true') return;
   const problems: string[] = [];
   if (env['AUTH_ENABLED'] === 'false') problems.push('AUTH_ENABLED=false');
-  if (isPaymentGatewayMockMode(env)) {
+  if (isPaymentGatewayMockMode(env) && env['HAIP_ALLOW_MOCK_PAYMENTS'] !== 'true') {
     problems.push('PAYMENT_GATEWAY=mock (or STRIPE_MODE=mock when PAYMENT_GATEWAY unset)');
   }
   if (!env['ID_ENCRYPTION_KEY']?.trim()) {

@@ -36,6 +36,17 @@ describe('assertSecureConfig', () => {
     ).not.toThrow();
   });
 
+  it('HAIP_ALLOW_MOCK_PAYMENTS lifts only the payment check', () => {
+    const base = { NODE_ENV: 'production', STRIPE_MODE: 'mock', HAIP_ALLOW_MOCK_PAYMENTS: 'true' };
+    expect(() =>
+      assertSecureConfig({ ...base, AUTH_ENABLED: 'true', ID_ENCRYPTION_KEY: 'a'.repeat(64) } as any),
+    ).not.toThrow();
+    expect(() =>
+      assertSecureConfig({ ...base, AUTH_ENABLED: 'false', ID_ENCRYPTION_KEY: 'a'.repeat(64) } as any),
+    ).toThrow(/AUTH_ENABLED=false/);
+    expect(() => assertSecureConfig({ ...base, AUTH_ENABLED: 'true' } as any)).toThrow(/ID_ENCRYPTION_KEY/);
+  });
+
   it('refuses to boot in production without ID_ENCRYPTION_KEY', () => {
     expect(() =>
       assertSecureConfig({ NODE_ENV: 'production', AUTH_ENABLED: 'true', STRIPE_MODE: 'live' } as any),
